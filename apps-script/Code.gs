@@ -23,7 +23,7 @@ var CONFIG_DEFAULT = [
   ['nombre', 'Mi Local', 'Nombre que aparece en la tarjeta'],
   ['club', 'Club de Visitas', 'Nombre del programa'],
   ['logo_url', '', 'Link directo a la imagen del logo (opcional)'],
-  ['color', '#F72DA4', 'Color principal (hex)'],
+  ['color', '#FF8A2A', 'Color principal (hex)'],
   ['color2', '#35C6E8', 'Color secundario (hex)'],
   ['visitas_meta', '10', 'Cantidad de casillas de la tarjeta'],
   ['descripcion', 'Junta visitas y gana premios en cada etapa de tu tarjeta.', 'Texto explicativo'],

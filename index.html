@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Club de Visitas</title>
-<meta name="theme-color" content="#F72DA4">
+<meta name="theme-color" content="#FF8A2A">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
@@ -47,14 +47,14 @@
     <h1 style="margin-top:16px" id="hola">Hola</h1>
     <p class="sub" style="margin-bottom:0" id="tel"></p>
 
-    <div class="box" style="text-align:center;background:var(--soft);border-color:var(--line)">
-      <h3 style="color:var(--brand)">Tu código de socio</h3>
+    <div class="box" style="text-align:center;background:var(--soft);border-color:#BFEAF5">
+      <h3 style="color:#1593B3">Tu código de socio</h3>
       <div class="code" id="codigo">····</div>
       <p>En caja dicta tu <b>teléfono</b> o este <b>código</b> para sumar tu visita.</p>
     </div>
 
     <div class="box">
-      <div class="row"><h3 style="margin:0">Tarjeta de visitas</h3><b style="color:var(--brand);font-size:14px" id="cuenta">0 de 10</b></div>
+      <div class="row"><h3 style="margin:0">Tarjeta de visitas</h3><b style="color:var(--fucsia);font-size:14px" id="cuenta">0 de 10</b></div>
       <div class="grid" id="grid"></div>
       <div class="next" id="next"></div>
     </div>
@@ -174,7 +174,7 @@ function renderCupones() {
   $('cupTabs').innerHTML = tabs.map(([k, t]) => `<button type="button" class="${k === cupFiltro ? 'on' : ''}" data-k="${k}">${t} (${cnt(k)})</button>`).join('');
   $('cupTabs').querySelectorAll('button').forEach(b => b.onclick = () => { cupFiltro = b.dataset.k; renderCupones(); });
   const lista = cs.filter(x => x.estado === cupFiltro);
-  $('cupones').innerHTML = lista.length ? lista.map(x => `<div class="cup ${x.estado}"><span class="em">${x.emoji}</span><div class="t"><b>${esc(x.premio)}</b><span>${x.estado === 'usado' ? 'Canjeado el ' + x.usado : x.estado === 'vencido' ? 'Venció el ' + x.vence : 'Válido hasta el ' + x.vence}</span></div><span class="cod">${x.codigo}</span></div>`).join('')
+  $('cupones').innerHTML = lista.length ? lista.map(x => `<div class="cup ${x.estado} ${x.estado==='disponible'?'disp':''}"><span class="em">${x.emoji}</span><div class="t"><b>${esc(x.premio)}</b><span>${x.estado === 'usado' ? 'Canjeado el ' + x.usado : x.estado === 'vencido' ? 'Venció el ' + x.vence : 'Válido hasta el ' + x.vence}</span></div><span class="cod">${x.codigo}</span></div>`).join('')
     : `<div class="empty">${cupFiltro === 'disponible' ? 'Aún no tienes premios disponibles.<br>¡Sigue sumando visitas!' : 'Nada por aquí.'}</div>`;
 }
 

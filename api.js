@@ -20,7 +20,7 @@ async function api(action, data = {}) {
 
 /* ---------- Modo demo (misma lógica que Code.gs, en localStorage) ---------- */
 const DEMO_CFG = {
-  nombre: 'Mundo RDL', club: 'Club RDL', logo_url: '', color: '#F72DA4', color2: '#35C6E8',
+  nombre: 'Mundo RDL', club: 'Club RDL', logo_url: '', color: '#FF8A2A', color2: '#35C6E8',
   visitas_meta: 10,
   descripcion: 'Suma visitas en tu tarjeta virtual y gana premios en la visita 3, 6, 8 y 10.',
   instagram: '',whatsapp: '', una_visita_por_dia: 'SI',
