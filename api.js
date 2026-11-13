@@ -68,10 +68,11 @@ async function demoApi(action, p) {
         if (nombre.length < 2) throw new Error('Ingresa tu nombre');
         if (!/^9\d{8}$/.test(tel)) throw new Error('El teléfono debe tener 9 dígitos y empezar con 9');
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) throw new Error('Correo no válido');
+        if (!p.acepta) throw new Error('Debes aceptar el uso de tus datos para crear la tarjeta');
         if (demoFind(db, tel) || demoFind(db, correo)) throw new Error('Ya existe una tarjeta con ese teléfono o correo. Usa "Iniciar sesión".');
         const abc = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; let id;
         do { id = Array.from({ length: 4 }, () => abc[Math.floor(Math.random() * abc.length)]).join(''); } while (demoFind(db, id));
-        const c = { id, nombre, telefono: tel, correo, visitas: 0, ultimaISO: '', completadas: 0, totales: 0 };
+        const c = { id, nombre, telefono: tel, correo, visitas: 0, ultimaISO: '', completadas: 0, totales: 0, promos: p.promos ? 'SI' : 'NO' };
         db.clientes.push(c); demoSave(db); return demoResp(db, c);
       }
       case 'login': case 'cliente': {

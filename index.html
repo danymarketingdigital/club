@@ -30,6 +30,8 @@
       <input id="telefono" inputmode="numeric" placeholder="9 1234 5678" autocomplete="tel" required>
       <label for="correo">Correo electrónico *</label>
       <input id="correo" type="email" autocomplete="email" required>
+      <label class="check"><input type="checkbox" id="acepta" required> <span>Acepto que <b class="nomLocal">el local</b> guarde mi nombre, teléfono y correo para administrar mi tarjeta de visitas y mis premios. *</span></label>
+      <label class="check"><input type="checkbox" id="promos"> <span>Quiero recibir promociones y novedades de <b class="nomLocal">el local</b> por WhatsApp o correo (opcional).</span></label>
       <button class="btn" type="submit">Crear mi tarjeta ✨</button>
     </form>
     <form id="fEntrar" class="hidden">
@@ -110,6 +112,7 @@ async function init() {
   $('topName').textContent = (CFG.club || 'Club') + ' · ' + CFG.nombre;
   $('logoA').innerHTML = logoHtml(CFG);
   $('dAcceso').textContent = CFG.descripcion || '';
+  document.querySelectorAll('.nomLocal').forEach(b => b.textContent = CFG.nombre);
   $('chipClub').textContent = (CFG.club || 'Club') + ' ⭐';
   const id = getId();
   if (id) { const c = await api('cliente', { id }); if (c.ok) return render(c); setId(null); }
@@ -131,7 +134,7 @@ async function submit(form, action, data) {
   if (!r.ok) return msg($('mAcceso'), r.error);
   setId(r.cliente.id); render(r);
 }
-$('fCrear').onsubmit = e => { e.preventDefault(); submit(e.target, 'registrar', { nombre: $('nombre').value, telefono: $('telefono').value, correo: $('correo').value }); };
+$('fCrear').onsubmit = e => { e.preventDefault(); submit(e.target, 'registrar', { nombre: $('nombre').value, telefono: $('telefono').value, correo: $('correo').value, acepta: $('acepta').checked, promos: $('promos').checked }); };
 $('fEntrar').onsubmit = e => { e.preventDefault(); submit(e.target, 'login', { ident: $('ident').value }); };
 $('salir').onclick = () => { setId(null); DATA = null; setTab(false); show('vAcceso'); };
 $('refrescar').onclick = () => refresh(true);
