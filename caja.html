@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Caja · Club de Visitas</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div id="demo" class="demo hidden">Modo demo · PIN de caja: 1234</div>
+<div class="top" id="topName">Caja</div>
+
+<main class="wrap">
+  <section id="vPin" class="card">
+    <div id="logoA"></div>
+    <h1>Panel de caja</h1>
+    <p class="sub">Solo para el personal del local.</p>
+    <form id="fPin">
+      <label for="pin">PIN de caja</label>
+      <input id="pin" type="password" inputmode="numeric" autocomplete="off" required>
+      <button class="btn" type="submit">Entrar</button>
+    </form>
+    <div id="mPin" class="msg"></div>
+  </section>
+
+  <section id="vCaja" class="hidden">
+    <div class="card">
+      <div class="row"><span class="chip">🧾 Caja</span><button class="link" id="salir" type="button">Cerrar sesión</button></div>
+      <form id="fBuscar">
+        <label for="q">Teléfono o código del cliente</label>
+        <input id="q" placeholder="Ej: 912345678 o K7P2" autocomplete="off" required>
+        <button class="btn" type="submit">Buscar cliente 🔎</button>
+      </form>
+      <div id="mBuscar" class="msg"></div>
+    </div>
+
+    <div class="card hidden" id="cliente" style="margin-top:16px">
+      <div class="row"><div><b style="font-size:19px" id="cNombre"></b><div class="hint" id="cInfo" style="margin:2px 0 0"></div></div><span class="chip" id="cCod"></span></div>
+      <div class="box" style="margin-top:14px">
+        <div class="row"><h3 style="margin:0">Visitas</h3><b style="color:var(--brand)" id="cCuenta"></b></div>
+        <div class="grid" id="grid"></div>
+      </div>
+      <button class="btn verde" id="bVisita" type="button">＋ Sumar visita</button>
+      <button class="btn sec hidden" id="bForzar" type="button">Ya vino hoy · sumar igual</button>
+      <div id="mVisita" class="msg"></div>
+      <div class="box">
+        <h3>🎟️ Premios disponibles</h3>
+        <div id="cupones"></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <form id="fCanje">
+        <label for="codPremio">Canjear código de premio</label>
+        <input id="codPremio" placeholder="Ej: PX4K9A" autocomplete="off" style="text-transform:uppercase" required>
+        <button class="btn sec" type="submit">Canjear premio</button>
+      </form>
+      <div id="mCanje" class="msg"></div>
+    </div>
+  </section>
+</main>
+
+<footer><a href="https://www.danymarketing.cl" target="_blank" rel="noopener">Creado por <b>Dany Marketing Digital</b></a></footer>
+
+<script src="api.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const KEY = 'clubdmd_pin_' + LOCAL;
+let CFG = null, PIN = '', CLI = null;
+
+function msg(el, t, ok) { el.textContent = t; el.className = 'msg ' + (ok ? 'ok' : 'err'); }
+function clearMsg(...els) { els.forEach(e => e.className = 'msg'); }
+
+async function entrar(pin, silencioso) {
+  const r = await api('caja_login', { pin });
+  if (!r.ok) { if (!silencioso) msg($('mPin'), r.error); try { localStorage.removeItem(KEY); } catch (e) {} return; }
+  PIN = pin; CFG = r.config; applyTheme(CFG);
+  try { localStorage.setItem(KEY, pin); } catch (e) {}
+  $('topName').textContent = 'Caja · ' + CFG.nombre;
+  $('vPin').classList.add('hidden'); $('vCaja').classList.remove('hidden');
+  $('q').focus();
+}
+
+async function init() {
+  if (DEMO) $('demo').classList.remove('hidden');
+  const c = await api('config');
+  if (c.ok) { applyTheme(c.config); $('logoA').innerHTML = logoHtml(c.config); $('topName').textContent = 'Caja · ' + c.config.nombre; }
+  let saved = null; try { saved = localStorage.getItem(KEY); } catch (e) {}
+  if (saved) entrar(saved, true);
+}
+
+$('fPin').onsubmit = e => { e.preventDefault(); entrar($('pin').value.trim()); };
+$('salir').onclick = () => { try { localStorage.removeItem(KEY); } catch (e) {} location.reload(); };
+
+$('fBuscar').onsubmit = async e => {
+  e.preventDefault(); clearMsg($('mBuscar'), $('mVisita'));
+  const b = e.target.querySelector('button'); b.disabled = true;
+  const r = await api('caja_buscar', { pin: PIN, q: $('q').value });
+  b.disabled = false;
+  if (!r.ok) { $('cliente').classList.add('hidden'); return msg($('mBuscar'), r.error); }
+  pintar(r);
+};
+
+function pintar(r) {
+  CLI = r; const c = r.cliente, meta = CFG.visitas_meta;
+  $('cNombre').textContent = c.nombre;
+  $('cInfo').textContent = `${c.telefono} · ${c.correo}` + (c.ultima ? ` · última visita ${c.ultima}` : '');
+  $('cCod').textContent = c.id;
+  $('cCuenta').textContent = `${c.visitas} de ${meta}`;
+  const prem = {}; CFG.premios.forEach(p => prem[p.visita] = p);
+  $('grid').innerHTML = Array.from({ length: meta }, (_, i) => {
+    const n = i + 1, p = prem[n], done = n <= c.visitas;
+    return `<div class="cell ${p ? 'premio' : ''} ${done ? 'done' : ''}">${p ? `<span class="em">${p.emoji}</span><small>${n}</small>` : done ? '✓' : n}</div>`;
+  }).join('');
+  const disp = r.cupones.filter(x => x.estado === 'disponible');
+  $('cupones').innerHTML = disp.length ? disp.map(x => `<div class="cup"><span class="em">${x.emoji}</span><div class="t"><b>${esc(x.premio)}</b><span>${x.codigo} · vence ${x.vence}</span></div><button class="btn" style="width:auto;margin:0;padding:10px 14px;font-size:14px" data-c="${x.codigo}" type="button">Canjear</button></div>`).join('')
+    : '<div class="empty">Sin premios disponibles.</div>';
+  $('cupones').querySelectorAll('button[data-c]').forEach(b => b.onclick = () => canjear(b.dataset.c, $('mVisita'), b));
+  $('bForzar').classList.add('hidden');
+  $('cliente').classList.remove('hidden');
+}
+
+async function visita(forzar) {
+  const b = forzar ? $('bForzar') : $('bVisita'); b.disabled = true;
+  const r = await api('caja_visita', { pin: PIN, id: CLI.cliente.id, forzar: !!forzar });
+  b.disabled = false;
+  if (!r.ok) { msg($('mVisita'), r.error); if (r.yaHoy) $('bForzar').classList.remove('hidden'); return; }
+  pintar(r);
+  msg($('mVisita'), r.premioNuevo
+    ? `✅ Visita ${r.cliente.visitas} sumada. ¡Ganó ${r.premioNuevo.emoji} ${r.premioNuevo.premio}!`
+    : `✅ Visita sumada. Lleva ${r.cliente.visitas} de ${CFG.visitas_meta}.`, true);
+}
+$('bVisita').onclick = () => visita(false);
+$('bForzar').onclick = () => { if (confirm('¿Sumar otra visita hoy a este cliente?')) visita(true); };
+
+async function canjear(codigo, out, b) {
+  if (!confirm('¿Entregar este premio y marcarlo como canjeado?')) return;
+  if (b) b.disabled = true;
+  const r = await api('caja_canjear', { pin: PIN, codigo });
+  if (b) b.disabled = false;
+  if (!r.ok) return msg(out, r.error);
+  if (CLI && CLI.cliente.id === r.cliente.id) pintar(r);
+  msg(out, `🎁 Canjeado: ${r.canjeado.emoji} ${r.canjeado.premio} para ${r.cliente.nombre}.`, true);
+}
+$('fCanje').onsubmit = e => { e.preventDefault(); canjear($('codPremio').value.trim().toUpperCase(), $('mCanje')); };
+
+init();
+</script>
+</body>
+</html>

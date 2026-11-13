@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Club de Visitas</title>
+<meta name="theme-color" content="#F72DA4">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div id="demo" class="demo hidden">Modo demo · los datos se guardan solo en este navegador</div>
+<div class="top" id="topName">Club</div>
+
+<main class="wrap">
+  <!-- Acceso -->
+  <section id="vAcceso" class="card hidden">
+    <div id="logoA"></div>
+    <h1 id="tAcceso">Tu tarjeta de visitas</h1>
+    <p class="sub" id="dAcceso"></p>
+    <div class="tabs">
+      <button id="tabCrear" class="on" type="button">Crear tarjeta</button>
+      <button id="tabEntrar" type="button">Iniciar sesión</button>
+    </div>
+    <form id="fCrear">
+      <label for="nombre">Nombre y apellido *</label>
+      <input id="nombre" autocomplete="name" required>
+      <label for="telefono">Teléfono *</label>
+      <input id="telefono" inputmode="numeric" placeholder="9 1234 5678" autocomplete="tel" required>
+      <label for="correo">Correo electrónico *</label>
+      <input id="correo" type="email" autocomplete="email" required>
+      <button class="btn" type="submit">Crear mi tarjeta ✨</button>
+    </form>
+    <form id="fEntrar" class="hidden">
+      <label for="ident">Teléfono o correo electrónico *</label>
+      <input id="ident" required>
+      <div class="hint">Ingresa el teléfono (9 dígitos) o correo con el que registraste tu tarjeta.</div>
+      <button class="btn" type="submit">Ingresar a mi tarjeta ✨</button>
+    </form>
+    <div id="mAcceso" class="msg"></div>
+  </section>
+
+  <!-- Tarjeta -->
+  <section id="vTarjeta" class="card hidden">
+    <div class="row"><span class="chip" id="chipClub">Club</span><button class="link" id="salir" type="button">🚪 Salir</button></div>
+    <h1 style="margin-top:16px" id="hola">Hola</h1>
+    <p class="sub" style="margin-bottom:0" id="tel"></p>
+
+    <div class="box" style="text-align:center;background:var(--soft);border-color:var(--line)">
+      <h3 style="color:var(--brand)">Tu código de socio</h3>
+      <div class="code" id="codigo">····</div>
+      <p>En caja dicta tu <b>teléfono</b> o este <b>código</b> para sumar tu visita.</p>
+    </div>
+
+    <div class="box">
+      <div class="row"><h3 style="margin:0">Tarjeta de visitas</h3><b style="color:var(--brand);font-size:14px" id="cuenta">0 de 10</b></div>
+      <div class="grid" id="grid"></div>
+      <div class="next" id="next"></div>
+    </div>
+
+    <div class="box">
+      <h3>🎟️ Mis premios</h3>
+      <div class="subtabs" id="cupTabs"></div>
+      <div id="cupones"></div>
+    </div>
+
+    <div class="box" id="boxNov">
+      <h3>📢 Novedades</h3>
+      <div id="novedades"></div>
+    </div>
+
+    <div class="box">
+      <h3>📲 Guárdala en tu pantalla de inicio</h3>
+      <p><b>iPhone:</b> botón compartir ⎋ → "Añadir a pantalla de inicio".<br><b>Android:</b> menú ⋮ → "Añadir a pantalla de inicio".</p>
+    </div>
+    <button class="btn sec" id="refrescar" type="button">↻ Actualizar</button>
+  </section>
+
+  <div id="cargando" class="sub" style="padding:40px 0">Cargando…</div>
+</main>
+
+<div class="overlay" id="ovPremio"><div class="card">
+  <div class="big" id="ovEm">🎁</div>
+  <h1>¡Ganaste un premio!</h1>
+  <p class="sub" id="ovTxt"></p>
+  <button class="btn" type="button" onclick="this.closest('.overlay').classList.remove('on')">¡Genial!</button>
+</div></div>
+
+<footer><a href="https://www.danymarketing.cl" target="_blank" rel="noopener">Creado por <b>Dany Marketing Digital</b></a></footer>
+
+<script src="api.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const KEY = 'clubdmd_' + LOCAL;
+let CFG = null, DATA = null, cupFiltro = 'disponible';
+
+function show(v) {
+  ['vAcceso', 'vTarjeta', 'cargando'].forEach(x => $(x).classList.toggle('hidden', x !== v));
+}
+function msg(el, t, ok) { el.textContent = t; el.className = 'msg ' + (ok ? 'ok' : 'err'); }
+function getId() { try { return localStorage.getItem(KEY); } catch (e) { return null; } }
+function setId(id) { try { id ? localStorage.setItem(KEY, id) : localStorage.removeItem(KEY); } catch (e) {} }
+
+async function init() {
+  if (DEMO) $('demo').classList.remove('hidden');
+  const r = await api('config');
+  if (!r.ok) { $('cargando').textContent = r.error || 'No se pudo cargar el club'; return; }
+  CFG = r.config; applyTheme(CFG);
+  $('topName').textContent = (CFG.club || 'Club') + ' · ' + CFG.nombre;
+  $('logoA').innerHTML = logoHtml(CFG);
+  $('dAcceso').textContent = CFG.descripcion || '';
+  $('chipClub').textContent = (CFG.club || 'Club') + ' ⭐';
+  const id = getId();
+  if (id) { const c = await api('cliente', { id }); if (c.ok) return render(c); setId(null); }
+  show('vAcceso');
+}
+
+function setTab(entrar) {
+  $('tabEntrar').classList.toggle('on', entrar); $('tabCrear').classList.toggle('on', !entrar);
+  $('fEntrar').classList.toggle('hidden', !entrar); $('fCrear').classList.toggle('hidden', entrar);
+  $('tAcceso').textContent = entrar ? 'Recuperar tarjeta' : 'Tu tarjeta de visitas';
+  $('mAcceso').className = 'msg';
+}
+$('tabCrear').onclick = () => setTab(false);
+$('tabEntrar').onclick = () => setTab(true);
+
+async function submit(form, action, data) {
+  const b = form.querySelector('button'); b.disabled = true;
+  const r = await api(action, data); b.disabled = false;
+  if (!r.ok) return msg($('mAcceso'), r.error);
+  setId(r.cliente.id); render(r);
+}
+$('fCrear').onsubmit = e => { e.preventDefault(); submit(e.target, 'registrar', { nombre: $('nombre').value, telefono: $('telefono').value, correo: $('correo').value }); };
+$('fEntrar').onsubmit = e => { e.preventDefault(); submit(e.target, 'login', { ident: $('ident').value }); };
+$('salir').onclick = () => { setId(null); DATA = null; setTab(false); show('vAcceso'); };
+$('refrescar').onclick = () => refresh(true);
+
+function render(r) {
+  const prev = DATA ? DATA.cliente.visitas : null;
+  const prevCup = DATA ? DATA.cupones.length : null;
+  DATA = r; const c = r.cliente, meta = CFG.visitas_meta;
+  $('hola').textContent = 'Hola ' + c.nombre.split(' ')[0];
+  $('tel').textContent = c.telefono + (c.completadas ? ` · ${c.completadas} tarjeta${c.completadas > 1 ? 's' : ''} completada${c.completadas > 1 ? 's' : ''} 🏆` : '');
+  $('codigo').textContent = c.id;
+  $('cuenta').textContent = `${c.visitas} de ${meta}`;
+  const prem = {}; CFG.premios.forEach(p => prem[p.visita] = p);
+  $('grid').innerHTML = Array.from({ length: meta }, (_, i) => {
+    const n = i + 1, p = prem[n], done = n <= c.visitas;
+    const cls = ['cell', p ? 'premio' : '', done ? 'done' : '', prev !== null && n > prev && done ? 'pop' : ''].join(' ');
+    return `<div class="${cls}" title="${p ? esc(p.premio) : 'Visita ' + n}">${p ? `<span class="em">${p.emoji}</span><small>${n}</small>` : done ? '<span class="em">✓</span>' : n}</div>`;
+  }).join('');
+  const sig = CFG.premios.filter(p => p.visita > (c.visitas >= meta ? 0 : c.visitas)).sort((a, b) => a.visita - b.visita)[0];
+  const base = c.visitas >= meta ? 0 : c.visitas;
+  $('next').innerHTML = c.visitas >= meta
+    ? '🎉 <b>¡Completaste tu tarjeta!</b> En tu próxima visita empiezas una nueva.'
+    : sig ? `Siguiente premio: ${sig.emoji} <b>${esc(sig.premio)}</b> en la visita ${sig.visita} (faltan ${sig.visita - base}).` : '';
+  renderCupones();
+  const nov = CFG.novedades || [];
+  $('boxNov').classList.toggle('hidden', !nov.length && !CFG.instagram);
+  $('novedades').innerHTML = nov.map(n => `<div class="nov">${n.imagen ? `<img src="${esc(n.imagen)}" alt="">` : ''}${n.link ? `<a href="${esc(n.link)}" target="_blank" rel="noopener">${esc(n.texto)}</a>` : esc(n.texto)}</div>`).join('')
+    + (CFG.instagram ? `<div class="nov">Síguenos en <a href="https://instagram.com/${esc(CFG.instagram)}" target="_blank" rel="noopener">@${esc(CFG.instagram)}</a></div>` : '');
+  show('vTarjeta');
+  if (prevCup !== null && r.cupones.length > prevCup) {
+    const nuevo = r.cupones[0]; $('ovEm').textContent = nuevo.emoji;
+    $('ovTxt').textContent = nuevo.premio + '. Muestra el código ' + nuevo.codigo + ' en caja para canjearlo.';
+    $('ovPremio').classList.add('on');
+  }
+}
+
+function renderCupones() {
+  const cs = DATA.cupones, cnt = e => cs.filter(x => x.estado === e).length;
+  const tabs = [['disponible', 'Disponibles'], ['usado', 'Usados'], ['vencido', 'Vencidos']];
+  $('cupTabs').innerHTML = tabs.map(([k, t]) => `<button type="button" class="${k === cupFiltro ? 'on' : ''}" data-k="${k}">${t} (${cnt(k)})</button>`).join('');
+  $('cupTabs').querySelectorAll('button').forEach(b => b.onclick = () => { cupFiltro = b.dataset.k; renderCupones(); });
+  const lista = cs.filter(x => x.estado === cupFiltro);
+  $('cupones').innerHTML = lista.length ? lista.map(x => `<div class="cup ${x.estado}"><span class="em">${x.emoji}</span><div class="t"><b>${esc(x.premio)}</b><span>${x.estado === 'usado' ? 'Canjeado el ' + x.usado : x.estado === 'vencido' ? 'Venció el ' + x.vence : 'Válido hasta el ' + x.vence}</span></div><span class="cod">${x.codigo}</span></div>`).join('')
+    : `<div class="empty">${cupFiltro === 'disponible' ? 'Aún no tienes premios disponibles.<br>¡Sigue sumando visitas!' : 'Nada por aquí.'}</div>`;
+}
+
+async function refresh(manual) {
+  if (!DATA) return;
+  const b = $('refrescar'); if (manual) b.disabled = true;
+  const r = await api('cliente', { id: DATA.cliente.id });
+  b.disabled = false; if (r.ok) render(r);
+}
+setInterval(() => { if (document.visibilityState === 'visible') refresh(false); }, 20000);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') refresh(false); });
+
+init();
+</script>
+</body>
+</html>
